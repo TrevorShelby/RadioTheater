@@ -1,0 +1,15 @@
+# Build output (lives in build.nosync to dodge iCloud sync corruption)
+build.nosync/
+build/
+.gradle/
+
+# IDE
+.idea/
+*.iml
+.kotlin/
+
+# Local machine config (signing keys, SDK paths)
+local.properties
+
+# macOS
+.DS_Store
