@@ -1,8 +1,8 @@
 package com.portal.radiotheater.ui
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -29,18 +29,22 @@ fun TuningDial(
 ) {
     Canvas(
         modifier = modifier
+            // Single gesture handler: seek to the touch point immediately on press,
+            // then follow the finger. (Two separate tap+drag detectors fought each
+            // other, which made the needle lag and jump back toward the start.)
             .pointerInput(Unit) {
-                detectTapGestures(onTap = { o ->
-                    onSeek((o.x / size.width).coerceIn(0f, 1f)); onSeekEnd()
-                })
-            }
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragEnd = { onSeekEnd() },
-                    onDragCancel = { onSeekEnd() },
-                ) { change, _ ->
-                    onSeek((change.position.x / size.width).coerceIn(0f, 1f))
-                    change.consume()
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    onSeek((down.position.x / size.width).coerceIn(0f, 1f))
+                    down.consume()
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id }
+                        if (change == null || !change.pressed) break
+                        onSeek((change.position.x / size.width).coerceIn(0f, 1f))
+                        change.consume()
+                    }
+                    onSeekEnd()
                 }
             }
     ) {
@@ -74,15 +78,23 @@ fun TuningDial(
             typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
             isAntiAlias = true
         }
+        // Draw every year's tick, but only label one when there's room since the
+        // last label — otherwise closely-spaced years (e.g. a show with only a
+        // few episodes per year) collide into an unreadable smear.
+        var lastLabelRight = Float.NEGATIVE_INFINITY
         for ((label, frac) in yearMarks) {
             val x = pad + track * frac
-            drawContext.canvas.nativeCanvas.drawText(label, x + 4f, h * 0.40f, paint)
+            val labelled = x + 4f >= lastLabelRight + 8f
             drawLine(
-                Radio.DialText,
-                start = Offset(x, h * 0.44f),
+                Radio.DialText.copy(alpha = if (labelled) 1f else 0.45f),
+                start = Offset(x, h * (if (labelled) 0.44f else 0.56f)),
                 end = Offset(x, h * 0.78f),
-                strokeWidth = 3.5f,
+                strokeWidth = if (labelled) 3.5f else 2f,
             )
+            if (labelled) {
+                drawContext.canvas.nativeCanvas.drawText(label, x + 4f, h * 0.40f, paint)
+                lastLabelRight = x + 4f + paint.measureText(label)
+            }
         }
         // needle with warm glow
         val nx = pad + track * position.coerceIn(0f, 1f)

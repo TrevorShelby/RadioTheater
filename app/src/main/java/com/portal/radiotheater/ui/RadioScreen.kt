@@ -40,14 +40,15 @@ import java.util.Locale
 @Composable
 fun RadioScreen(vm: PlayerViewModel) {
     val catalog = vm.catalog
-    val yearMarks = remember {
+    val yearMarks = remember(catalog) {
+        val denom = (catalog.size - 1).coerceAtLeast(1).toFloat()
         val marks = ArrayList<Pair<String, Float>>()
         var lastYear = ""
         catalog.forEachIndexed { i, e ->
             val y = e.date.take(4)
-            if (y != lastYear) {
+            if (y.isNotEmpty() && y != lastYear) {
                 lastYear = y
-                marks.add(y to i / (catalog.size - 1f))
+                marks.add(y to i / denom)
             }
         }
         marks
@@ -71,10 +72,14 @@ fun RadioScreen(vm: PlayerViewModel) {
                 .border(4.dp, Radio.CabinetDeep, RoundedCornerShape(34.dp))
                 .padding(horizontal = 26.dp, vertical = 18.dp)
         ) {
-            // Brand plate
+            // Brand plate — tap to open the station picker
             Text(
-                "✦ RADIO MYSTERY THEATER ✦",
-                modifier = Modifier.fillMaxWidth(),
+                "✦ ${vm.currentShow.name} ✦   ▾",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { vm.uiClick(); vm.stationVisible = true }
+                    .padding(vertical = 2.dp),
                 textAlign = TextAlign.Center,
                 color = Radio.Trim,
                 fontFamily = FontFamily.Serif,
@@ -86,13 +91,12 @@ fun RadioScreen(vm: PlayerViewModel) {
 
             // Tuning dial
             TuningDial(
-                position = vm.currentIndex / (catalog.size - 1f),
+                position = vm.currentIndex / (catalog.size - 1).coerceAtLeast(1).toFloat(),
                 yearMarks = yearMarks,
                 onSeek = { f ->
-                    val idx = kotlin.math.round(f * (catalog.size - 1)).toInt()
-                    if (idx != vm.currentIndex) vm.nudge(idx - vm.currentIndex)
+                    vm.scrubTo(kotlin.math.round(f * (catalog.size - 1)).toInt())
                 },
-                onSeekEnd = { },
+                onSeekEnd = { vm.commitBrowse() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(86.dp),
@@ -173,6 +177,9 @@ fun RadioScreen(vm: PlayerViewModel) {
         }
         if (vm.detailVisible) {
             DetailOverlay(vm)
+        }
+        if (vm.stationVisible) {
+            StationOverlay(vm)
         }
     }
 }

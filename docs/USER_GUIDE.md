@@ -2,11 +2,20 @@
 
 The whole screen is a 1950s tabletop radio. Everything is touch.
 
+## Switching stations
+
+Tap the **brand plate** at the very top (it shows the current show name with a
+small ▾) to open the **STATIONS** picker. Choose any of the seven shows; the
+dial reloads to that station. Each station remembers its own browse position,
+resume point, and played-episode history, so switching back and forth never
+loses your place. Switching stations stops the current audio — press PLAY in
+the new station to start.
+
 ## Finding an episode
 
 | Control | What it does |
 |---|---|
-| **Slide-rule dial** (top) | Drag or tap to sweep through all 1,399 episodes. Year markings show where each broadcast season starts. The red needle is where you're browsing. |
+| **Slide-rule dial** (top) | Drag or tap to sweep through the whole station. Year markings show where each broadcast season starts. The red needle is where you're browsing. |
 | **TUNING knob** (left) | Turn it. Each click of the knob steps one episode. |
 | **◀◀ PREV / NEXT ▶▶** | Step one episode at a time. |
 | **⌕ FIND** | Opens the Station Finder: type a title, writer, episode number, or year. Tap a result to tune to it. |
@@ -26,7 +35,8 @@ browsing away from the playing episode; tap it to jump back.
 
 When an episode ends, the next one starts automatically, and the finished
 episode is marked **✓ PLAYED** (visible on the display, the episode card,
-and in search results).
+and in search results). Multi-part serials (like Johnny Dollar's five-part
+"Matters") play straight through.
 
 ## Episode details
 
@@ -42,7 +52,6 @@ the episode you left off on, and the display reads
 ## Tips
 
 - The Portal's physical volume buttons work alongside the VOLUME knob.
-- Episode descriptions and titles come from Wikipedia; a handful of
-  episodes have no description and the card will say so.
+- Some episodes have no description; the card will say so.
 - If an episode won't play ("STATIC — TRY NEXT EPISODE"), it's usually a
   temporary Archive.org hiccup — try again or skip ahead.

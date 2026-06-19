@@ -1,14 +1,14 @@
 # Adding more shows
 
-The app is built to be show-agnostic: a show is just **a catalog JSON** plus
-**one or more Internet Archive item identifiers**. CBS Radio Mystery Theater
-is simply the first preset.
+The app is multi-show. A station is just **a catalog JSON** plus **one or more
+Internet Archive item identifiers**, registered as a `Show` in
+`ShowRegistry` (in `Episode.kt`). Adding a station is data work, not a
+rewrite.
 
 ## What a show needs
 
-1. **Public-domain audio on Archive.org**, ideally one item (or a few) with
-   one mp3 per episode and a consistent filename scheme that contains the
-   episode number.
+1. **Public-domain audio on Archive.org** — one item (or several) with one
+   mp3 per episode.
 2. **A catalog**: a JSON array bundled in `app/src/main/assets/`, one object
    per episode:
 
@@ -23,26 +23,57 @@ is simply the first preset.
 }
 ```
 
-## Where the code touches the show
+3. **A `Show` entry** in `ShowRegistry.all` (`Episode.kt`):
 
-- `EpisodeRepository.kt` — `ITEMS` lists the Archive.org identifiers;
-  `FILE_RX` parses episode numbers out of the item's mp3 filenames;
-  `loadCatalog()` reads the asset.
-- `PlayerViewModel.kt` — the 1288/1289 item-boundary in the fallback URL
-  logic is CBSRMT-specific.
-- `RadioScreen.kt` — the brand plate text and the year marks derive from
-  the catalog dates automatically.
+```kotlin
+val MYSHOW = Show(
+    id = "myshow",                 // stable key; prefixes per-show prefs
+    name = "MY SHOW",              // brand-plate / station-picker label
+    catalogAsset = "catalog_myshow.json",
+    episodeCount = 123,
+    items = listOf(
+        ArchiveItem("Archive_Item_Identifier", 1, 123),  // id + ep range
+    ),
+    fileRegex = "...",             // see below; or omit for bundled filenames
+)
+```
 
-## Suggested path to multi-show support
+## Two filename strategies
 
-1. Introduce a `Show` data class (name, asset file, items list, filename
-   regex, episode→item mapping).
-2. Move the CBSRMT constants out of `EpisodeRepository` into a `Show`
-   registry.
-3. Add a show selector — a "band switch" knob (AM/FM/SW style) on the
-   radio face would stay true to the aesthetic.
-4. Keep per-show SharedPreferences keys (played set, resume point) by
-   prefixing them with the show id.
+- **Runtime resolution** (`fileRegex` set): if the Archive filenames embed the
+  episode number, give a regex where group 1 = the full filename and group 2 =
+  the episode number, e.g. for `XMinusOne55-04-24001NoContact.mp3`:
+  `"\"name\"\\s*:\\s*\"(XMinusOne\\d{2}-\\d{2}-\\d{2}(\\d{3})[^\"]*?\\.mp3)\""`.
+  The app fetches each item's metadata once, maps episode → exact filename,
+  and caches it. `fallbackFile` is only used if that fetch fails.
 
-Good candidates with public-domain Archive.org collections: Suspense,
-X Minus One, Dimension X, The Whistler, Lights Out, Inner Sanctum.
+- **Bundled filenames** (`fileRegex = null`, the default): for shows with
+  irregular names, dates, or spaces (e.g. Lights Out), store the exact,
+  URL-encoded filename in each episode's `fallbackFile` and skip runtime
+  resolution.
+
+## Multi-item shows
+
+`items` can list several Archive items with contiguous episode ranges (e.g.
+Johnny Dollar spans seven items, one per lead actor). Runtime resolution
+fetches every item and records which item each episode lives in, so the
+ranges only steer the offline fallback.
+
+Filenames with spaces/parentheses are URL-encoded automatically in
+`streamUrl`; bundled `fallbackFile` values should be stored pre-encoded.
+
+## Per-show state
+
+Played set, resume point, and last browse index are stored in
+SharedPreferences keyed by the show `id`, so each station is independent. No
+code needed — it falls out of the `id`.
+
+## Data-gathering tips
+
+Catalogs in this project were compiled from Wikipedia episode lists, the
+Jerry Haendiges Vintage Radio Logs (otrsite.com), and OTR Plot Spot
+(otrplotspot.com). Cross-check Archive filenames against the logs — titles and
+dates often differ slightly, so don't trust constructed names blindly.
+
+Good public-domain candidates still on the bench: Suspense, The Mysterious
+Traveler, Inner Sanctum, 2000 Plus, Space Patrol, The Whistler.
